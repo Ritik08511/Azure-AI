@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Train Route Finder</title>
+    <!-- Load the Speech SDK directly from CDN -->
+    <script>
+    // Create a script element programmatically to handle CORS
+    function loadSpeechSDK() {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            // Use our proxy endpoint instead of the direct Microsoft URL
+            script.src = '/speech-sdk-proxy';
+            script.onload = () => {
+                console.log("Speech SDK loaded successfully");
+                resolve();
+            };
+            script.onerror = () => {
+                console.error("Failed to load Speech SDK");
+                reject(new Error("Failed to load Speech SDK"));
+            };
+            document.head.appendChild(script);
+        });
+    }
+    </script>
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --primary-gradient: linear-gradient(135deg, #6e8efb, #4a6cf7);
+            --secondary-gradient: linear-gradient(135deg, #ff9966, #ff5e62);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(45deg, #1a1f35, #2d3259);
+            color: #fff;
+            padding: 1rem;
+            line-height: 1.6;
+        }
+
+        /* Responsive container */
+        .container {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        /* Responsive typography */
+        h1 {
+            font-size: clamp(1.75rem, 5vw, 2.5rem);
+            margin-bottom: clamp(1.5rem, 4vw, 2rem);
+            background: linear-gradient(to right, #fff, #a5b4fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-align: center;
+            letter-spacing: 1px;
+            padding: 0 10px;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: clamp(1rem, 4vw, 2rem);
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .autocomplete-wrapper {
+            position: relative;
+        }
+
+        .autocomplete-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(26, 31, 53, 0.95);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            margin-top: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            display: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .autocomplete-results.show {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .autocomplete-item:hover, .autocomplete-item:active {
+            background: rgba(74, 108, 247, 0.2);
+        }
+
+        .autocomplete-item .station-code {
+            color: #a5b4fc;
+            font-size: 0.9em;
+            margin-left: 0.5rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        /* Responsive grid for connection options */
+        .row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: #a5b4fc;
+            letter-spacing: 0.5px;
+        }
+
+        /* Touch-friendly form elements */
+        input, select {
+            width: 100%;
+            padding: clamp(0.75rem, 3vw, 1rem);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 16px; /* Prevents iOS zoom on focus */
+            transition: all 0.3s ease;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        /* Custom select styling for better mobile appearance */
+        select {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+            padding-right: 2.5rem;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #4a6cf7;
+            box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.2);
+        }
+
+        /* Touch-friendly button */
+        button {
+            width: 100%;
+            padding: clamp(0.75rem, 3vw, 1rem);
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Speech button styling */
+        .speech-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--secondary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            padding: 0;
+            z-index: 5;
+        }
+
+        .speech-btn.recording {
+            animation: pulse 1.5s infinite;
+            background: linear-gradient(135deg, #ff5e62, #ff5e62);
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 94, 98, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 94, 98, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 94, 98, 0); }
+        }
+
+        /* Input wrapper for positioning speech button */
+        .input-wrapper {
+            position: relative;
+        }
+
+        /* Adjust input padding to accommodate speech button */
+        .input-wrapper input {
+            padding-right: 50px;
+        }
+
+        /* Voice command section */
+        .voice-command-section {
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        .voice-command-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        .extracted-details {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .extracted-details h3 {
+            margin-bottom: 0.5rem;
+            color: #a5b4fc;
+        }
+
+        .extracted-details dl {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 0.5rem 1rem;
+            text-align: left;
+        }
+
+        .extracted-details dt {
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .extracted-details dd {
+            margin: 0;
+        }
+
+        .apply-button {
+            margin-top: 1rem;
+            background: var(--secondary-gradient);
+            display: none;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 10px;
+            }
+            
+            .glass-card {
+                padding: 1rem;
+            }
+            
+            button {
+                padding: 0.75rem;
+            }
+        }
+
+        /* Loading indicator */
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .loading.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        .loading-text {
+            margin-top: 1rem;
+            color: #fff;
+            font-size: 1.2rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Train Route Finder</h1>
+        <div class="voice-command-section">
+            <button id="voiceCommandButton" class="voice-command-button">🎤 Use Voice Command</button>
+            <p id="voiceCommandText" style="margin-top: 0.5rem; font-style: italic;"></p>
+            
+            <div id="extractedDetails" class="extracted-details">
+                <h3>Extracted Details</h3>
+                <dl>
+                    <dt>Origin:</dt>
+                    <dd id="extractedOrigin">-</dd>
+                    
+                    <dt>Destination:</dt>
+                    <dd id="extractedDestination">-</dd>
+                    
+                    <dt>Date:</dt>
+                    <dd id="extractedDate">-</dd>
+                </dl>
+                
+                <button id="applyExtractedDetails" class="apply-button">Apply These Details</button>
+            </div>
+        </div>
+        <div class="glass-card">
+            <form id="route-form" action="/" method="post">
+                <div class="form-group">
+                    <label for="origin">Origin Station:</label>
+                    <div class="input-wrapper autocomplete-wrapper">
+                        <input type="text" id="origin" name="origin" required>
+                        <div id="origin-results" class="autocomplete-results"></div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="destination">Destination Station:</label>
+                    <div class="input-wrapper autocomplete-wrapper">
+                        <input type="text" id="destination" name="destination" required>
+                        
+                        <div id="destination-results" class="autocomplete-results"></div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="date">Date of Journey:</label>
+                    <input type="date" id="date" name="date" required>
+                </div>
+                
+                <div class="row">
+                    <div class="form-group">
+                        <label>Maximum Routes</label>
+                        <select name="max_routes">
+                            <option value="1">1 Route</option>
+                            <option value="2">2 Routes</option>
+                            <option value="3">3 Routes</option>
+                            <option value="4">4 Routes</option>
+                            <option value="5">5 Routes</option>
+                        </select>                    </div>
+                    
+                    <div class="form-group">
+                        <label>Connection Time</label>
+                        <select name="connection_time">
+                            <option value="30">30 minutes</option>
+                            <option value="45">45 minutes</option>
+                            <option value="60">60 minutes</option>
+                            <option value="90">90 minutes</option>
+                            <option value="120">120 minutes</option>
+                        </select>
+
+                    </div>
+                </div>
+                
+                <button type="submit">Find Routes</button>
+            </form>
+        </div>
+        
+        
+    </div>
+    
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">Finding the best routes for you...</div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log("Checking Speech SDK availability...");
+        
+        // Show loading indicator when form is submitted
+        const routeForm = document.getElementById('route-form');
+        const loadingIndicator = document.getElementById('loading');
+        
+        if (routeForm) {
+            routeForm.addEventListener('submit', function() {
+                loadingIndicator.classList.add('show');
+            });
+        }
+        
+        // Fetch stations from the server
+        fetch('/api/stations')
+            .then(response => response.json())
+            .then(stations => {
+                console.log('Loaded stations:', stations);
+                setupAutocomplete('origin', 'origin-results', stations);
+                setupAutocomplete('destination', 'destination-results', stations);
+            })
+            .catch(error => {
+                console.error('Error loading stations:', error);
+                // Fallback to hardcoded stations if API fails
+                const fallbackStations = [
+                { code: 'ABR', name: 'Abu Road', full: 'ABR_AbuRoad' },
+        { code: 'ADD', name: 'Adilabad', full: 'ADD_Adilabad' },
+        { code: 'ADF', name: 'Adra', full: 'ADF_Adra' },
+        { code: 'ADRA', name: 'Adra', full: 'ADRA_Adra' },
+        { code: 'AGTE', name: 'Agartala', full: 'AGTE_Agartala' },
+        { code: 'AGC', name: 'Agra Cantt', full: 'AGC_AgraCantt' },
+        { code: 'AGN', name: 'Ahmadnagar', full: 'AGN_Ahmadnagar' },
+        { code: 'ADI', name: 'Ahmedabad', full: 'ADI_Ahmedabad' },
+        { code: 'AII', name: 'Ajmer', full: 'AII_Ajmer' },
+        { code: 'AKT', name: 'Akola', full: 'AKT_Akola' },
+        { code: 'ALN', name: 'Aligarhi', full: 'ALN_Aligarhi' },
+        { code: 'ALJN', name: 'Alipurduar Jn', full: 'ALJN_AlipurduarJn' },
+        { code: 'ALD', name: 'Allahabad', full: 'ALD_Allahabad' },
+        { code: 'ALLP', name: 'Alappuzha', full: 'ALLP_Alappuzha' },
+        { code: 'AWY', name: 'Aluva', full: 'AWY_Aluva' },
+        { code: 'AWB', name: 'Aurangabad', full: 'AWB_Aurangabad' },
+        { code: 'AN', name: 'Amalner', full: 'AN_Amalner' },
+        { code: 'ASAN', name: 'Amb Andaura', full: 'ASAN_AmbAndaura' },
+        { code: 'AME', name: 'Amethi', full: 'AME_Amethi' },
+        { code: 'ABKP', name: 'Ambikapur', full: 'ABKP_Ambikapur' },
+        { code: 'AMLA', name: 'Amla', full: 'AMLA_Amla' },
+        { code: 'ASR', name: 'Amritsar', full: 'ASR_Amritsar' },
+        { code: 'ANA', name: 'Anand', full: 'ANA_Anand' },
+        { code: 'ANDN', name: 'Anand Nagar', full: 'ANDN_AnandNagar' },
+        { code: 'ANVT', name: 'Anand Vihar Terminus', full: 'ANVT_AnandViharTerminus' },
+        { code: 'ATP', name: 'Anantapur', full: 'ATP_Anantapur' },
+        { code: 'AWL', name: 'Andal', full: 'AWL_Andal' },
+        { code: 'ARA', name: 'Ara', full: 'ARA_Ara' },
+        { code: 'APR', name: 'Anuppur', full: 'APR_Anuppur' },
+        { code: 'AJJ', name: 'Arakkonam', full: 'AJJ_Arakkonam' },
+        { code: 'ASK', name: 'Arsikere', full: 'ASK_Arsikere' },
+        { code: 'ASN', name: 'Asansol', full: 'ASN_Asansol' },
+        { code: 'ARJ', name: 'Aunrihar', full: 'ARJ_Aunrihar' },
+        { code: 'AYM', name: 'Ayodhya', full: 'AYM_Ayodhya' },
+        { code: 'AZR', name: 'Azamgarh', full: 'AZR_Azamgarh' },
+        { code: 'BPR', name: 'Badarpur', full: 'BPR_Badarpur' },
+        { code: 'BDJ', name: 'Badnera', full: 'BDJ_Badnera' },
+        { code: 'BGM', name: 'Belgaum', full: 'BGM_Belgaum' },
+        { code: 'BPM', name: 'Bagipat Road', full: 'BPM_BagipatRoad' },
+        { code: 'BDME', name: 'Baidyanathdham', full: 'BDME_Baidyanathdham' },
+        { code: 'BKP', name: 'Bakhtiyarpur', full: 'BKP_Bakhtiyarpur' },
+        { code: 'BSPR', name: 'Balasore', full: 'BSPR_Balasore' },
+        { code: 'BWT', name: 'Bangarapet', full: 'BWT_Bangarapet' },
+        { code: 'BLGR', name: 'Balangir', full: 'BLGR_Balangir' },
+        { code: 'BALV', name: 'Balaghat', full: 'BALV_Balaghat' },
+        { code: 'BLGT', name: 'Balurghat', full: 'BLGT_Balurghat' },
+        { code: 'BPO', name: 'Balipatna', full: 'BPO_Balipatna' },
+        { code: 'BNC', name: 'Bangalore Cantt', full: 'BNC_BangaloreCantt' },
+        { code: 'SBC', name: 'Bangalore City', full: 'SBC_BangaloreCity' },
+        { code: 'BNK', name: 'Bankura', full: 'BNK_Bankura' },
+        { code: 'BNO', name: 'Banahat', full: 'BNO_Banahat' },
+        { code: 'BKSC', name: 'Bokaro Steel City', full: 'BKSC_BokaroSteelCity' },
+        { code: 'BPH', name: 'Bapudham Motihari', full: 'BPH_BapudhamMotihari' },
+        { code: 'BAR', name: 'Bandikui', full: 'BAR_Bandikui' },
+        { code: 'BNJ', name: 'Baran', full: 'BNJ_Baran' },
+        { code: 'BE', name: 'Bareilly', full: 'BE_Bareilly' },
+        { code: 'BST', name: 'Basti', full: 'BST_Basti' },
+        { code: 'BTI', name: 'Bhatinda Jn', full: 'BTI_BhatindaJn' },
+        { code: 'BYN', name: 'Bayana', full: 'BYN_Bayana' },
+        { code: 'BEG', name: 'Begu Sarai', full: 'BEG_BeguSarai' },
+        { code: 'BAP', name: 'Belapur', full: 'BAP_Belapur' },
+        { code: 'BAY', name: 'Bellary', full: 'BAY_Bellary' },
+        { code: 'BTH', name: 'Bettiah', full: 'BTH_Bettiah' },
+        { code: 'BEU', name: 'Betul', full: 'BEU_Betul' },
+        { code: 'BPL', name: 'Bhopal', full: 'BPL_Bhopal' },
+        { code: 'BBS', name: 'Bhubaneswar', full: 'BBS_Bhubaneswar' },
+        { code: 'BHJ', name: 'Bhuj', full: 'BHJ_Bhuj' },
+        { code: 'BSL', name: 'Bhusaval', full: 'BSL_Bhusaval' },
+        { code: 'BJU', name: 'Bijwasan', full: 'BJU_Bijwasan' },
+        { code: 'BKN', name: 'Bikaner', full: 'BKN_Bikaner' },
+        { code: 'BKSC', name: 'Bokaro Steel City', full: 'BKSC_BokaroSteelCity' },
+        { code: 'BVI', name: 'Borivali', full: 'BVI_Borivali' },
+        { code: 'BSB', name: 'Varanasi', full: 'BSB_Varanasi' },
+        { code: 'BCT', name: 'Mumbai Central', full: 'BCT_MumbaiCentral' },
+        { code: 'CBE', name: 'Coimbatore Jn', full: 'CBE_CoimbatoreJn' },
+        { code: 'CDG', name: 'Chandigarh', full: 'CDG_Chandigarh' },
+        { code: 'CNB', name: 'Kanpur Central', full: 'CNB_KanpurCentral' },
+        { code: 'CSN', name: 'Chalisgarh', full: 'CSN_Chalisgarh' },
+        { code: 'MAS', name: 'Chennai Central', full: 'MAS_ChennaiCentral' },
+        { code: 'MS', name: 'Chennai Egmore', full: 'MS_ChennaiEgmore' },
+        { code: 'DDN', name: 'Dehradun', full: 'DDN_Dehradun' },
+        { code: 'DEE', name: 'Delhi Sarai Rohilla', full: 'DEE_DelhiSaraiRohilla' },
+        { code: 'DLI', name: 'Delhi', full: 'DLI_Delhi' },
+        { code: 'DSA', name: 'Delhi Shahdara', full: 'DSA_DelhiShahdara' },
+        { code: 'DHN', name: 'Dhanbad', full: 'DHN_Dhanbad' },
+        { code: 'DMR', name: 'Dharmanagar', full: 'DMR_Dharmanagar' },
+        { code: 'DWR', name: 'Dharwad', full: 'DWR_Dharwad' },
+        { code: 'DHO', name: 'Dhone', full: 'DHO_Dhone' },
+        { code: 'DBG', name: 'Darbhanga', full: 'DBG_Darbhanga' },
+        { code: 'DJ', name: 'Darbhanga', full: 'DJ_Darbhanga' },
+        { code: 'DURG', name: 'Durg', full: 'DURG_Durg' },
+        { code: 'ED', name: 'Erode', full: 'ED_Erode' },
+        { code: 'ERS', name: 'Ernakulam Jn', full: 'ERS_ErnakulamJn' },
+        { code: 'ETW', name: 'Etawah', full: 'ETW_Etawah' },
+        { code: 'FD', name: 'Faizabad', full: 'FD_Faizabad' },
+        { code: 'FBD', name: 'Faridabad', full: 'FBD_Faridabad' },
+        { code: 'FTP', name: 'Fatehpur', full: 'FTP_Fatehpur' },
+        { code: 'FZR', name: 'Firozpur', full: 'FZR_Firozpur' },
+        { code: 'G', name: 'Gooty', full: 'G_Gooty' },
+        { code: 'GJL', name: 'Gajraula', full: 'GJL_Gajraula' },
+        { code: 'GKP', name: 'Gorakhpur', full: 'GKP_Gorakhpur' },
+        { code: 'GZB', name: 'Ghaziabad', full: 'GZB_Ghaziabad' },
+        { code: 'GHY', name: 'Guwahati', full: 'GHY_Guwahati' },
+        { code: 'GWL', name: 'Gwalior', full: 'GWL_Gwalior' },
+        { code: 'HBJ', name: 'Habibganj', full: 'HBJ_Habibganj' },
+        { code: 'HWH', name: 'Howrah', full: 'HWH_Howrah' },
+        { code: 'HYB', name: 'Hyderabad', full: 'HYB_Hyderabad' },
+        { code: 'IDH', name: 'Indore', full: 'IDH_Indore' },
+        { code: 'IPL', name: 'Ipurupalem', full: 'IPL_Ipurupalem' },
+        { code: 'ITR', name: 'Itwari', full: 'ITR_Itwari' },
+        { code: 'JBP', name: 'Jabalpur', full: 'JBP_Jabalpur' },
+        { code: 'JP', name: 'Jaipur', full: 'JP_Jaipur' },
+        { code: 'JSM', name: 'Jaisalmer', full: 'JSM_Jaisalmer' },
+        { code: 'JUC', name: 'Jalandhar City', full: 'JUC_JalandharCity' },
+        { code: 'JAM', name: 'Jamnagar', full: 'JAM_Jamnagar' },
+        { code: 'JHS', name: 'Jhansi', full: 'JHS_Jhansi' },
+        { code: 'JU', name: 'Jodhpur', full: 'JU_Jodhpur' },
+        { code: 'KGP', name: 'Kharagpur', full: 'KGP_Kharagpur' },
+        
+        { code: 'KCG', name: 'Kacheguda', full: 'KCG_Kacheguda' },
+        { code: 'KZJ', name: 'Kazipet', full: 'KZJ_Kazipet' },
+        { code: 'KSNG', name: 'Kesinga', full: 'KSNG_Kesinga' },
+        { code: 'KDJR', name: 'Kendujhargarh', full: 'KDJR_Kendujhargarh' },
+        { code: 'KGBS', name: 'Kangasbagh', full: 'KGBS_Kangasbagh' },
+        { code: 'KLD', name: 'Khalilabad', full: 'KLD_Khalilabad' },
+        { code: 'KMK', name: 'Khammam', full: 'KMK_Khammam' },
+        { code: 'KNW', name: 'Khandwa', full: 'KNW_Khandwa' },
+        { code: 'KGP', name: 'Kharagpur', full: 'KGP_Kharagpur' },
+        { code: 'KEI', name: 'Khed', full: 'KEI_Khed' },
+        { code: 'KUR', name: 'Khurda Road', full: 'KUR_KhurdaRoad' },
+        { code: 'KIR', name: 'Katihar', full: 'KIR_Katihar' },
+        { code: 'KNE', name: 'Kishanganj', full: 'KNE_Kishanganj' },
+        { code: 'KSG', name: 'Kishangarh', full: 'KSG_Kishangarh' },
+        { code: 'KIUL', name: 'Kiul', full: 'KIUL_Kiul' },
+        { code: 'KCVL', name: 'Kochuveli', full: 'KCVL_Kochuveli' },
+        { code: 'KQR', name: 'Kodaikanal Road', full: 'KQR_KodaikanalRoad' },
+        { code: 'KOAA', name: 'Kolkata', full: 'KOAA_Kolkata' },
+        { code: 'CLT', name: 'Kozhikode', full: 'CLT_Kozhikode' },
+        { code: 'KPD', name: 'Katpadi', full: 'KPD_Katpadi' },
+        { code: 'KRPU', name: 'Koraput', full: 'KRPU_Koraput' },
+        { code: 'KRBA', name: 'Korba', full: 'KRBA_Korba' },
+        { code: 'KOTA', name: 'Kota', full: 'KOTA_Kota' },
+        { code: 'KTW', name: 'Kotdwara', full: 'KTW_Kotdwara' },
+        { code: 'KCP', name: 'Kotkapura', full: 'KCP_Kotkapura' },
+        { code: 'KTYM', name: 'Kottayam', full: 'KTYM_Kottayam' },
+        { code: 'KZJ', name: 'Kazipet', full: 'KZJ_Kazipet' },
+        { code: 'KNJ', name: 'Krishnanagar City', full: 'KNJ_KrishanagarCity' },
+        { code: 'KJM', name: 'Krishnarajapuram', full: 'KJM_Krishnarajapuram' },
+        { code: 'KUDL', name: 'Kudal', full: 'KUDL_Kudal' },
+        { code: 'KMU', name: 'Kumbakonam', full: 'KMU_Kumbakonam' },
+        { code: 'KUDA', name: 'Kundara', full: 'KUDA_Kundara' },
+        { code: 'KWV', name: 'Kurduvadi', full: 'KWV_Kurduvadi' },
+        { code: 'KRNT', name: 'Kurukshetra', full: 'KRNT_Kurukshetra' },
+        { code: 'LHU', name: 'Lakhimpur', full: 'LHU_Lakhimpur' },
+        { code: 'LL', name: 'Lalkuan', full: 'LL_Lalkuan' },
+        { code: 'LTT', name: 'Lokmanya Tilak', full: 'LTT_LokmanyaTilak' },
+        { code: 'LKA', name: 'Lanka', full: 'LKA_Lanka' },
+        { code: 'LKO', name: 'Lucknow', full: 'LKO_Lucknow' },
+        { code: 'LMG', name: 'Lumding', full: 'LMG_Lumding' },
+        { code: 'LJN', name: 'Lucknow', full: 'LJN_Lucknow' },
+        { code: 'MAO', name: 'Madgaon', full: 'MAO_Madgaon' },
+        { code: 'MDT', name: 'Madarihat', full: 'MDT_Madarihat' },
+        { code: 'MAD', name: 'Maddur', full: 'MAD_Maddur' },
+        { code: 'MDR', name: 'Makhdumpur', full: 'MDR_Makhdumpur' },
+        { code: 'MJN', name: 'Majhagawan', full: 'MJN_Majhagawan' },
+        { code: 'MEB', name: 'Maliya', full: 'MEB_Maliya' },
+        { code: 'MLDT', name: 'Malda Town', full: 'MLDT_MaldaTown' },
+        { code: 'MNM', name: 'Manamadurai', full: 'MNM_Manamadurai' },
+        { code: 'MAQ', name: 'Mangalore Central', full: 'MAQ_MangaloreCentral' },
+        { code: 'MNI', name: 'Mansi', full: 'MNI_Mansi' },
+        { code: 'MMR', name: 'Manmad', full: 'MMR_Manmad' },
+        { code: 'MDB', name: 'Mandwabazar', full: 'MDB_Mandwabazar' },
+        { code: 'MTC', name: 'Meerut City', full: 'MTC_MeerutCity' },
+        { code: 'MTP', name: 'Mettupalayam', full: 'MTP_Mettupalayam' },
+        { code: 'MRJ', name: 'Miraj', full: 'MRJ_Miraj' },
+        { code: 'MOF', name: 'Moga', full: 'MOF_Moga' },
+        { code: 'MKA', name: 'Mokama', full: 'MKA_Mokama' },
+        { code: 'MUR', name: 'Mumbai', full: 'MUR_Mumbai' },
+        { code: 'MGS', name: 'Mughalsarai', full: 'MGS_Mughalsarai' },
+        { code: 'BCT', name: 'Mumbai Central', full: 'BCT_MumbaiCentral' },
+        { code: 'MZS', name: 'Muzaffarpur', full: 'MZS_Muzaffarpur' },
+        { code: 'MYS', name: 'Mysore', full: 'MYS_Mysore' },
+        { code: 'NGP', name: 'Nagpur', full: 'NGP_Nagpur' },
+        { code: 'NK', name: 'Nasik', full: 'NK_Nasik' },
+        { code: 'NGO', name: 'Nagaon', full: 'NGO_Nagaon' },
+        { code: 'NDT', name: 'Narwana', full: 'NDT_Narwana' },
+        { code: 'NWP', name: 'New Coochbehar', full: 'NWP_NewCoochbehar' },
+        { code: 'NDLS', name: 'New Delhi', full: 'NDLS_NewDelhi' },
+        { code: 'NFK', name: 'New Farakka', full: 'NFK_NewFarakka' },
+        { code: 'NJP', name: 'New Jalpaiguri', full: 'NJP_NewJalpaiguri' },
+        { code: 'NTSK', name: 'New Tinsukia', full: 'NTSK_NewTinsukia' },
+        { code: 'NZM', name: 'Nizamuddin', full: 'NZM_Nizamuddin' },
+        { code: 'OGL', name: 'Ongole', full: 'OGL_Ongole' },
+        { code: 'PC', name: 'Pachora', full: 'PC_Pachora' },
+        { code: 'PKD', name: 'Palakkad', full: 'PKD_Palakkad' },
+        { code: 'PLG', name: 'Palghat', full: 'PLG_Palghat' },
+        { code: 'PNP', name: 'Panipat', full: 'PNP_Panipat' },
+        { code: 'PTK', name: 'Pathankot', full: 'PTK_Pathankot' },
+        { code: 'PNBE', name: 'Patna', full: 'PNBE_Patna' },
+        { code: 'PBR', name: 'Porbandar', full: 'PBR_Porbandar' },
+        { code: 'PURI', name: 'Puri', full: 'PURI_Puri' },
+        { code: 'R', name: 'Raipur', full: 'R_Raipur' },
+        { code: 'RMM', name: 'Rameswaram', full: 'RMM_Rameswaram' },
+        { code: 'RNC', name: 'Ranchi', full: 'RNC_Ranchi' },
+        { code: 'RTM', name: 'Ratlam', full: 'RTM_Ratlam' },
+        { code: 'RXL', name: 'Raxaul', full: 'RXL_Raxaul' },
+        { code: 'RE', name: 'Rewa', full: 'RE_Rewa' },
+        { code: 'ROK', name: 'Rohtak', full: 'ROK_Rohtak' },
+        { code: 'RJPB', name: 'Rajendra Pul', full: 'RJPB_RajendraPul' },
+        { code: 'SBC', name: 'Bangalore City', full: 'SBC_BangaloreCity' },
+        { code: 'SC', name: 'Secunderabad', full: 'SC_Secunderabad' },
+        { code: 'SDAH', name: 'Sealdah', full: 'SDAH_Sealdah' },
+        { code: 'SLI', name: 'Shimla', full: 'SLI_Shimla' },
+        { code: 'SCL', name: 'Silchar', full: 'SCL_Silchar' },
+        { code: 'SLO', name: 'Solapur', full: 'SLO_Solapur' },
+        { code: 'ST', name: 'Surat', full: 'ST_Surat' },
+        { code: 'SUNR', name: 'Surendra Nagar', full: 'SUNR_SurendraNagar' },
+        { code: 'TBM', name: 'Tambaram', full: 'TBM_Tambaram' },
+        { code: 'TPJ', name: 'Tiruchchirappalli', full: 'TPJ_Tiruchchirappalli' },
+        { code: 'TVC', name: 'Thiruvananthapuram', full: 'TVC_Thiruvananthapuram' },
+        { code: 'TNA', name: 'Thane', full: 'TNA_Thane' },
+        { code: 'TPTY', name: 'Tirupati', full: 'TPTY_Tirupati' },
+        { code: 'UDZ', name: 'Udaipur City', full: 'UDZ_UdaipurCity' },
+        { code: 'UJN', name: 'Ujjain', full: 'UJN_Ujjain' },
+        { code: 'UMB', name: 'Ambala', full: 'UMB_Ambala' },
+        { code: 'BSB', name: 'Varanasi', full: 'BSB_Varanasi' },
+        { code: 'BZA', name: 'Vijayawada', full: 'BZA_Vijayawada' },
+        { code: 'VSKP', name: 'Visakhapatnam', full: 'VSKP_Visakhapatnam' },
+        { code: 'WL', name: 'Warangal', full: 'WL_Warangal' },
+        { code: 'YPR', name: 'Yesvantpur', full: 'YPR_Yesvantpur' }
+       ];
+                setupAutocomplete('origin', 'origin-results', fallbackStations);
+                setupAutocomplete('destination', 'destination-results', fallbackStations);
+            });
+
+        function setupAutocomplete(inputId, resultsId, stations) {
+            const input = document.getElementById(inputId);
+            const results = document.getElementById(resultsId);
+            
+            if (!input || !results) {
+                console.error(`Elements not found: input=${inputId}, results=${resultsId}`);
+                return;
+            }
+            
+            input.addEventListener('input', () => {
+                const value = input.value.toLowerCase();
+                const matches = stations.filter(station => 
+                    station.name.toLowerCase().includes(value) ||
+                    station.code.toLowerCase().includes(value)
+                );
+
+                results.innerHTML = '';
+                
+                if (value.length > 0 && matches.length > 0) {
+                    results.classList.add('show');
+                    matches.forEach(station => {
+                        const div = document.createElement('div');
+                        div.className = 'autocomplete-item';
+                        div.innerHTML = `${station.name} <span class="station-code">(${station.code})</span>`;
+                        div.addEventListener('click', () => {
+                            input.value = station.full;
+                            results.classList.remove('show');
+                        });
+                        results.appendChild(div);
+                    });
+                } else {
+                    results.classList.remove('show');
+                }
+            });
+
+            // Close autocomplete when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!input.contains(e.target) && !results.contains(e.target)) {
+                    results.classList.remove('show');
+                }
+            });
+        }
+        
+        try {
+            // Load the Speech SDK
+            await loadSpeechSDK();
+            
+            // Function to start speech recognition
+            async function startSpeechRecognition(buttonId, inputId) {
+                try {
+                    console.log(`Starting speech recognition for ${buttonId}`);
+                    
+                    // Get token from server
+                    const response = await fetch('/api/get-speech-token');
+                    console.log('Token response status:', response.status);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('Token received:', data);
+                        
+                        if (data.token && data.region) {
+                            console.log('Received token successfully');
+                            
+                            // Check if SpeechSDK is available
+                            if (typeof SpeechSDK === 'undefined') {
+                                throw new Error('Speech SDK is not loaded');
+                            }
+                            
+                            // Initialize speech recognition with the token
+                            const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(data.token, data.region);
+                            speechConfig.speechRecognitionLanguage = 'en-US';
+                            
+                            // Request microphone permission explicitly
+                            try {
+                                await navigator.mediaDevices.getUserMedia({ audio: true });
+                                console.log("Microphone permission granted");
+                            } catch (micError) {
+                                console.error("Microphone permission denied:", micError);
+                                alert("Please allow microphone access to use speech recognition");
+                                throw micError;
+                            }
+                            
+                            const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+                            const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+                            
+                            // Show recording indicator
+                            const button = document.getElementById(buttonId);
+                            button.classList.add('recording');
+                            button.textContent = 'Listening...';
+                            
+                            console.log("Starting recognition...");
+                            
+                            // Start recognition
+                            recognizer.recognizeOnceAsync(
+                                async function (result) {
+                                    console.log("Recognition completed with result:", result);
+                                    
+                                    if (result.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
+                                        const text = result.text;
+                                        console.log(`Recognition result: "${text}"`);
+                                        
+                                        // Update input field with recognized text
+                                        document.getElementById(inputId).value = text;
+                                        
+                                        // If this is the main search button or origin field, process with NER
+                                        if (buttonId === 'startRecognizeButton' || inputId === 'origin') {
+                                            try {
+                                                console.log("Processing with NER:", text);
+                                                
+                                                // Call the NER endpoint
+                                                const nerResponse = await fetch('/api/process-query', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Content-Type': 'application/json'
+                                                    },
+                                                    body: JSON.stringify({ query: text })
+                                                });
+                                                
+                                                if (nerResponse.ok) {
+                                                    const nerData = await nerResponse.json();
+                                                    console.log("NER results:", nerData);
+                                                    
+                                                    // Fill the form fields with the extracted entities
+                                                    if (nerData.origin_formatted) {
+                                                        document.getElementById('origin').value = nerData.origin_formatted;
+                                                    } else if (nerData.origin) {
+                                                        document.getElementById('origin').value = nerData.origin;
+                                                    }
+                                                    
+                                                    if (nerData.destination_formatted) {
+                                                        document.getElementById('destination').value = nerData.destination_formatted;
+                                                    } else if (nerData.destination) {
+                                                        document.getElementById('destination').value = nerData.destination;
+                                                    }
+                                                    
+                                                    if (nerData.journey_date) {
+                                                        const dateStr = nerData.journey_date;
+                                                        const formattedDate = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
+                                                        document.getElementById('date').value = formattedDate;
+                                                    }
+                                                } else {
+                                                    console.error("NER processing failed:", await nerResponse.text());
+                                                }
+                                            } catch (nerError) {
+                                                console.error("Error processing NER:", nerError);
+                                            }
+                                        }
+                                    } else {
+                                        console.warn(`No speech detected. Result reason: ${result.reason}, ${result.errorDetails}`);
+                                        alert("No speech detected. Please try again and speak clearly.");
+                                    }
+                                    
+                                    // Reset button
+                                    button.classList.remove('recording');
+                                    button.textContent = '🎤';
+                                    
+                                    // Close recognizer
+                                    recognizer.close();
+                                },
+                                function (err) {
+                                    console.error(`Speech recognition error:`, err);
+                                    alert('Speech recognition error: ' + (err.message || err));
+                                    
+                                    // Reset button
+                                    button.classList.remove('recording');
+                                    button.textContent = '🎤';
+                                    
+                                    // Close recognizer
+                                    recognizer.close();
+                                }
+                            );
+                        } else {
+                            throw new Error('Invalid token data received');
+                        }
+                    } else {
+                        throw new Error(`Failed to get token: ${response.status}`);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Speech recognition failed: ' + error.message);
+                }
+            }
+            
+            // Add event listeners to speech buttons
+            const originSpeechBtn = document.getElementById('originSpeechBtn');
+            const destinationSpeechBtn = document.getElementById('destinationSpeechBtn');
+            
+            if (originSpeechBtn) {
+                originSpeechBtn.addEventListener('click', function() {
+                    startSpeechRecognition('originSpeechBtn', 'origin');
+                });
+            } else {
+                console.error("Origin speech button not found");
+            }
+            
+            if (destinationSpeechBtn) {
+                destinationSpeechBtn.addEventListener('click', function() {
+                    startSpeechRecognition('destinationSpeechBtn', 'destination');
+                });
+            } else {
+                console.error("Destination speech button not found");
+            }
+            
+            // Handle the main speech button if it exists
+            const startRecognizeButton = document.getElementById('startRecognizeButton');
+            if (startRecognizeButton) {
+                startRecognizeButton.addEventListener('click', function() {
+                    // Use the main search button for NER processing
+                    startSpeechRecognition('startRecognizeButton', 'origin');
+                });
+            }
+            
+            // Voice command with NER processing
+            async function processVoiceCommand() {
+                try {
+                    console.log("Starting voice command processing");
+                    
+                    // Get token from server
+                    const response = await fetch('/api/get-speech-token');
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        if (data.token && data.region) {
+                            // Initialize speech recognition with the token
+                            const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(data.token, data.region);
+                            speechConfig.speechRecognitionLanguage = 'en-US';
+                            
+                            // Request microphone permission
+                            await navigator.mediaDevices.getUserMedia({ audio: true });
+                            
+                            const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+                            const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+                            
+                            // Show recording indicator
+                            const button = document.getElementById('voiceCommandButton');
+                            button.classList.add('recording');
+                            button.textContent = 'Listening for command...';
+                            
+                            // Start recognition
+                            recognizer.recognizeOnceAsync(
+                                async function (result) {
+                                    if (result.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
+                                        const text = result.text;
+                                        console.log(`Voice command recognized: "${text}"`);
+                                        
+                                        // Display the recognized text
+                                        document.getElementById('voiceCommandText').textContent = text;
+                                        
+                                        // Process the text with NER
+                                        try {
+                                            const nerResponse = await fetch('/api/process-query', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json'
+                                                },
+                                                body: JSON.stringify({ query: text })
+                                            });
+                                            
+                                            if (nerResponse.ok) {
+                                                const nerData = await nerResponse.json();
+                                                console.log("NER results:", nerData);
+                                                
+                                                // Display extracted details
+                                                const detailsContainer = document.getElementById('extractedDetails');
+                                                detailsContainer.style.display = 'block';
+                                                
+                                                document.getElementById('extractedOrigin').textContent = 
+                                                    nerData.origin || 'Not detected';
+                                                document.getElementById('extractedDestination').textContent = 
+                                                    nerData.destination || 'Not detected';
+                                                document.getElementById('extractedDate').textContent = 
+                                                    nerData.journey_date_text || 'Not detected';
+                                                
+                                                // Show apply button if we have at least origin and destination
+                                                const applyButton = document.getElementById('applyExtractedDetails');
+                                                if (nerData.origin && nerData.destination) {
+                                                    applyButton.style.display = 'inline-block';
+                                                    
+                                                    // Set up the apply button to fill the form
+                                                    applyButton.onclick = function() {
+                                                        // Fill origin with the formatted station name
+                                                        if (nerData.origin) {
+                                                            document.getElementById('origin').value = nerData.origin;
+                                                        }
+                                                        
+                                                        // Fill destination with the formatted station name
+                                                        if (nerData.destination) {
+                                                            document.getElementById('destination').value = nerData.destination;
+                                                        }
+                                                        
+                                                        // Fill date if available
+                                                        if (nerData.formatted_date) {
+                                                            document.getElementById('date').value = nerData.formatted_date;
+                                                        } else if (nerData.journey_date) {
+                                                            const dateStr = nerData.journey_date;
+                                                            const formattedDate = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
+                                                            document.getElementById('date').value = formattedDate;
+                                                        }
+                                                        
+                                                        // Hide the extracted details section
+                                                        document.getElementById('extractedDetails').style.display = 'none';
+                                                    };
+                                                } else {
+                                                    applyButton.style.display = 'none';
+                                                }
+                                            } else {
+                                                console.error("NER processing failed:", await nerResponse.text());
+                                                alert("Failed to process your command. Please try again.");
+                                            }
+                                        } catch (nerError) {
+                                            console.error("Error processing NER:", nerError);
+                                            alert("Error processing your command: " + nerError.message);
+                                        }
+                                    } else {
+                                        console.warn(`No speech detected. Result reason: ${result.reason}`);
+                                        alert("No speech detected. Please try again and speak clearly.");
+                                    }
+                                    
+                                    // Reset button
+                                    button.classList.remove('recording');
+                                    button.textContent = '🎤 Use Voice Command';
+                                    
+                                    // Close recognizer
+                                    recognizer.close();
+                                },
+                                function (err) {
+                                    console.error(`Speech recognition error:`, err);
+                                    alert('Speech recognition error: ' + (err.message || err));
+                                    
+                                    // Reset button
+                                    button.classList.remove('recording');
+                                    button.textContent = '🎤 Use Voice Command';
+                                    
+                                    // Close recognizer
+                                    recognizer.close();
+                                }
+                            );
+                        } else {
+                            throw new Error('Invalid token data received');
+                        }
+                    } else {
+                        throw new Error(`Failed to get token: ${response.status}`);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Voice command failed: ' + error.message);
+                }
+            }
+            
+            // Add this to your DOMContentLoaded event handler
+            const voiceCommandButton = document.getElementById('voiceCommandButton');
+            if (voiceCommandButton) {
+                voiceCommandButton.addEventListener('click', processVoiceCommand);
+            } else {
+                console.error("Voice command button not found");
+            }
+            
+        } catch (error) {
+            console.error("Failed to initialize speech recognition:", error);
+        }
+    });
+    </script>
+
+    <!-- Station Autocomplete Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fetch stations from the server
+            fetch('/api/stations')
+                .then(response => response.json())
+                .then(stations => {
+                    console.log('Loaded stations:', stations);
+                    setupAutocomplete('origin', 'origin-results', stations);
+                    setupAutocomplete('destination', 'destination-results', stations);
+                })
+                .catch(error => {
+                    console.error('Error loading stations:', error);
+                    // Fallback to hardcoded stations if API fails
+                    const fallbackStations = [
+                        { code: 'BSB', name: 'Varanasi', full: 'BSB_Varanasi' },
+                        { code: 'BZA', name: 'Vijayawada', full: 'BZA_Vijayawada' },
+                        { code: 'VSKP', name: 'Visakhapatnam', full: 'VSKP_Visakhapatnam' },
+                        { code: 'WL', name: 'Warangal', full: 'WL_Warangal' },
+                        { code: 'YPR', name: 'Yesvantpur', full: 'YPR_Yesvantpur' },
+                        { code: 'NDLS', name: 'New Delhi', full: 'NDLS_New Delhi' },
+                        { code: 'HWH', name: 'Howrah', full: 'HWH_Howrah' },
+                        { code: 'MAS', name: 'Chennai', full: 'MAS_Chennai' },
+                        { code: 'CSTM', name: 'Mumbai CST', full: 'CSTM_Mumbai CST' },
+                        { code: 'SBC', name: 'Bengaluru', full: 'SBC_Bengaluru' },
+                        { code: 'SC', name: 'Secunderabad', full: 'SC_Secunderabad' },
+                        { code: 'JP', name: 'Jaipur', full: 'JP_Jaipur' },
+                        { code: 'LKO', name: 'Lucknow', full: 'LKO_Lucknow' },
+                        { code: 'ADI', name: 'Ahmedabad', full: 'ADI_Ahmedabad' },
+                        { code: 'PNBE', name: 'Patna', full: 'PNBE_Patna' }
+                    ];
+                    setupAutocomplete('origin', 'origin-results', fallbackStations);
+                    setupAutocomplete('destination', 'destination-results', fallbackStations);
+                });
+
+            function setupAutocomplete(inputId, resultsId, stations) {
+                const input = document.getElementById(inputId);
+                const results = document.getElementById(resultsId);
+                
+                if (!input || !results) {
+                    console.error(`Elements not found: input=${inputId}, results=${resultsId}`);
+                    return;
+                }
+                
+                input.addEventListener('input', () => {
+                    const value = input.value.toLowerCase();
+                    const matches = stations.filter(station => 
+                        station.name.toLowerCase().includes(value) ||
+                        station.code.toLowerCase().includes(value)
+                    );
+
+                    results.innerHTML = '';
+                    
+                    if (value.length > 0 && matches.length > 0) {
+                        results.classList.add('show');
+                        matches.forEach(station => {
+                            const div = document.createElement('div');
+                            div.className = 'autocomplete-item';
+                            div.innerHTML = `${station.name} <span class="station-code">(${station.code})</span>`;
+                            div.addEventListener('click', () => {
+                                input.value = station.full;
+                                results.classList.remove('show');
+                            });
+                            results.appendChild(div);
+                        });
+                    } else {
+                        results.classList.remove('show');
+                    }
+                });
+
+                // Close autocomplete when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!input.contains(e.target) && !results.contains(e.target)) {
+                        results.classList.remove('show');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
