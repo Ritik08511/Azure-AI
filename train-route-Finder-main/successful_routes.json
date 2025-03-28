@@ -1,0 +1,668 @@
+[
+  {
+    "origin": "NDLS",
+    "destination": "CPR",
+    "intermediate": "CNB",
+    "success_count": 1
+  },
+  {
+    "origin": "NDLS",
+    "destination": "CPR",
+    "intermediate": "GKP",
+    "success_count": 1
+  },
+  {
+    "origin": "NDLS",
+    "destination": "HWH",
+    "intermediate": "MMCT",
+    "success_count": 1
+  },
+  {
+    "origin": "NDLS",
+    "destination": "CPR",
+    "intermediate": "MB",
+    "success_count": 1
+  },
+  {
+    "origin": "BE",
+    "destination": "SBC",
+    "intermediate": "NDLS",
+    "success_count": 1
+  },
+  {
+    "origin": "HYB",
+    "destination": "GWL",
+    "intermediate": "SBC",
+    "success_count": 1
+  },
+  {
+    "origin": "BPL",
+    "destination": "ADI",
+    "intermediate": "NDLS",
+    "success_count": 1
+  },
+  {
+    "origin": "BE",
+    "destination": "DDN",
+    "intermediate": "NDLS",
+    "success_count": 1
+  },
+  {
+    "origin": "UDZ",
+    "destination": "PRYJ",
+    "intermediate": "AGC",
+    "success_count": 1
+  },
+  {
+    "origin": "UDZ",
+    "destination": "PRYJ",
+    "intermediate": "VGLJ",
+    "success_count": 1
+  },
+  {
+    "origin": "GZB",
+    "destination": "MMCT",
+    "intermediate": "NZM",
+    "success_count": 1
+  },
+  {
+    "origin": "KOAA",
+    "destination": "AGC",
+    "intermediate": "DGR",
+    "success_count": 1
+  },
+  {
+    "origin": "NDLS",
+    "destination": "CPR",
+    "intermediate": "UMB",
+    "success_count": 1
+  },
+  {
+    "origin": "CPR",
+    "destination": "NDLS",
+    "intermediate": "ASH",
+    "success_count": 1
+  },
+  {
+    "origin": "NDLS",
+    "destination": "CPR",
+    "intermediate": "SIR",
+    "success_count": 1
+  },
+  {
+    "origin": "JP",
+    "destination": "PNBE",
+    "intermediate": "AGC",
+    "success_count": 1
+  },
+  {
+    "origin": "AGC",
+    "destination": "SC",
+    "intermediate": "VGLJ",
+    "success_count": 1
+  },
+  {
+    "origin": "BCT",
+    "destination": "AGC",
+    "intermediate": "NK",
+    "success_count": 1
+  },
+  {
+    "origin": "ASR",
+    "destination": "KOAA",
+    "intermediate": "DLI",
+    "success_count": 1
+  },
+  {
+    "origin": "KOAA",
+    "destination": "BSB",
+    "intermediate": "KIUL",
+    "success_count": 1
+  },
+  {
+    "origin": "LKO",
+    "destination": "MAS",
+    "intermediate": "VGLJ",
+    "success_count": 1
+  },
+  {
+    "origin": "HWH",
+    "destination": "BCT",
+    "intermediate": "KGP",
+    "success_count": 1
+  },
+  {
+    "origin": "MAS",
+    "destination": "BSB",
+    "intermediate": "GDR",
+    "success_count": 1
+  },
+  {
+    "origin": "LKO",
+    "destination": "BCT",
+    "intermediate": "ORAI",
+    "success_count": 1
+  },
+  {
+    "origin": "BCT",
+    "destination": "MTC",
+    "intermediate": "BRC",
+    "success_count": 1
+  },
+  {
+    "origin": "MAS",
+    "destination": "PNBE",
+    "intermediate": "SBC",
+    "success_count": 1
+  },
+  {
+    "origin": "LKO",
+    "destination": "SC",
+    "intermediate": "PRYJ",
+    "success_count": 1
+  },
+  {
+    "origin": "KGP",
+    "destination": "MTC",
+    "intermediate": "BSP",
+    "success_count": 1
+  },
+  {
+    "origin": "SC",
+    "destination": "MYS",
+    "intermediate": "KRNT",
+    "success_count": 1
+  },
+  {
+    "origin": "BCT",
+    "destination": "JP",
+    "intermediate": "PLG",
+    "success_count": 1
+  },
+  {
+    "origin": "MTC",
+    "destination": "PNBE",
+    "intermediate": "GZB",
+    "success_count": 1
+  },
+  {
+    "origin": "SC",
+    "destination": "BCT",
+    "intermediate": "AWB",
+    "success_count": 1
+  },
+  {
+    "origin": "PNBE",
+    "destination": "HWH",
+    "intermediate": "PRRB",
+    "success_count": 1
+  },
+  {
+    "origin": "KOAA",
+    "destination": "BPL",
+    "intermediate": "BRGW",
+    "success_count": 1
+  },
+  {
+    "origin": "BCT",
+    "destination": "KOAA",
+    "intermediate": "BSL",
+    "success_count": 1
+  },
+  {
+    "origin": "CDG",
+    "destination": "SBC",
+    "intermediate": "NZM",
+    "success_count": 1
+  },
+  {
+    "origin": "LKO",
+    "destination": "BCT",
+    "intermediate": "CPA",
+    "success_count": 1
+  },
+  {
+    "origin": "LKO",
+    "destination": "SBC",
+    "intermediate": "PRYJ",
+    "success_count": 1
+  },
+  {
+    "origin": "JP",
+    "destination": "BCT",
+    "intermediate": "DEE",
+    "success_count": 1
+  },
+  {
+    "origin": "JP",
+    "destination": "MAS",
+    "intermediate": "HMH",
+    "success_count": 1
+  },
+  {
+    "origin": "BPL",
+    "destination": "HWH",
+    "intermediate": "KMZ",
+    "success_count": 1
+  },
+  {
+    "origin": "HYB",
+    "destination": "PNBE",
+    "intermediate": "SC",
+    "success_count": 1
+  },
+  {
+    "origin": "BCT",
+    "destination": "AGC",
+    "intermediate": "DVL",
+    "success_count": 1
+  },
+  {
+    "origin": "KOAA",
+    "destination": "AGC",
+    "intermediate": "DDU",
+    "success_count": 1
+  },
+  {
+    "origin": "LKO",
+    "destination": "BCT",
+    "intermediate": "TDL",
+    "success_count": 1
+  },
+  {
+    "origin": "BSB",
+    "destination": "SBC",
+    "intermediate": "ET",
+    "success_count": 1
+  },
+  {
+    "origin": "BPL",
+    "destination": "DBG",
+    "intermediate": "NDLS",
+    "success_count": 1
+  },
+  {
+    "origin": "HYB",
+    "destination": "MAS",
+    "intermediate": "TEL",
+    "success_count": 1
+  },
+  {
+    "origin": "LKO",
+    "destination": "WL",
+    "intermediate": "STA",
+    "success_count": 1
+  },
+  {
+    "origin": "ASR",
+    "destination": "HYB",
+    "intermediate": "CNB",
+    "success_count": 1
+  },
+  {
+    "origin": "BPL",
+    "destination": "SBC",
+    "intermediate": "NDLS",
+    "success_count": 1
+  },
+  {
+    "origin": "SBC",
+    "destination": "BCT",
+    "intermediate": "SA",
+    "success_count": 1
+  },
+  {
+    "origin": "CLT",
+    "destination": "SBC",
+    "intermediate": "PAY",
+    "success_count": 1
+  },
+  {
+    "origin": "LKO",
+    "destination": "BPL",
+    "intermediate": "GKP",
+    "success_count": 1
+  },
+  {
+    "origin": "ASR",
+    "destination": "BPL",
+    "intermediate": "NDLS",
+    "success_count": 1
+  },
+  {
+    "origin": "WL",
+    "destination": "HWH",
+    "intermediate": "HYB",
+    "success_count": 1
+  },
+  {
+    "origin": "HYB",
+    "destination": "BCT",
+    "intermediate": "NZB",
+    "success_count": 1
+  },
+  {
+    "origin": "ASR",
+    "destination": "PKD",
+    "intermediate": "NDLS",
+    "success_count": 1
+  },
+  {
+    "origin": "SLI",
+    "destination": "HYB",
+    "intermediate": "KYN",
+    "success_count": 1
+  },
+  {
+    "origin": "AGC",
+    "destination": "KOAA",
+    "intermediate": "PNBE",
+    "success_count": 1
+  },
+  {
+    "origin": "KOAA",
+    "destination": "HWH",
+    "intermediate": "RNG",
+    "success_count": 1
+  },
+  {
+    "origin": "NDLS",
+    "destination": "WL",
+    "intermediate": "BPL",
+    "success_count": 1
+  },
+  {
+    "origin": "UJN",
+    "destination": "JP",
+    "intermediate": "RTM",
+    "success_count": 1
+  },
+  {
+    "origin": "SC",
+    "destination": "BCT",
+    "intermediate": "MUE",
+    "success_count": 1
+  },
+  {
+    "origin": "CDG",
+    "destination": "NDLS",
+    "intermediate": "PNP",
+    "success_count": 1
+  },
+  {
+    "origin": "HWH",
+    "destination": "ADI",
+    "intermediate": "KGP",
+    "success_count": 1
+  },
+  {
+    "origin": "ASR",
+    "destination": "JP",
+    "intermediate": "BTI",
+    "success_count": 1
+  },
+  {
+    "origin": "UJN",
+    "destination": "LKO",
+    "intermediate": "SHRN",
+    "success_count": 1
+  },
+  {
+    "origin": "GHY",
+    "destination": "BSB",
+    "intermediate": "MXN",
+    "success_count": 1
+  },
+  {
+    "origin": "BCT",
+    "destination": "BBS",
+    "intermediate": "SLO",
+    "success_count": 1
+  },
+  {
+    "origin": "UJN",
+    "destination": "PNBE",
+    "intermediate": "RTM",
+    "success_count": 1
+  },
+  {
+    "origin": "LKO",
+    "destination": "NDLS",
+    "intermediate": "MB",
+    "success_count": 1
+  },
+  {
+    "origin": "CPR",
+    "destination": "PNBE",
+    "intermediate": "BNZ",
+    "success_count": 1
+  },
+  {
+    "origin": "KOAA",
+    "destination": "AGC",
+    "intermediate": "BKP",
+    "success_count": 1
+  },
+  {
+    "origin": "MTC",
+    "destination": "BPL",
+    "intermediate": "NZM",
+    "success_count": 1
+  },
+  {
+    "origin": "AGC",
+    "destination": "SC",
+    "intermediate": "RKMP",
+    "success_count": 1
+  },
+  {
+    "origin": "KOAA",
+    "destination": "PNBE",
+    "intermediate": "BWN",
+    "success_count": 1
+  },
+  {
+    "origin": "BSB",
+    "destination": "SC",
+    "intermediate": "PRRB",
+    "success_count": 1
+  },
+  {
+    "origin": "BPL",
+    "destination": "JP",
+    "intermediate": "HD",
+    "success_count": 1
+  },
+  {
+    "origin": "BPL",
+    "destination": "CPR",
+    "intermediate": "BSB",
+    "success_count": 1
+  },
+  {
+    "origin": "SC",
+    "destination": "DBG",
+    "intermediate": "NDLS",
+    "success_count": 1
+  },
+  {
+    "origin": "CDG",
+    "destination": "VSKP",
+    "intermediate": "NZM",
+    "success_count": 1
+  },
+  {
+    "origin": "JP",
+    "destination": "GHY",
+    "intermediate": "BKN",
+    "success_count": 1
+  },
+  {
+    "origin": "MYS",
+    "destination": "PNBE",
+    "intermediate": "SBC",
+    "success_count": 1
+  },
+  {
+    "origin": "BSB",
+    "destination": "HYB",
+    "intermediate": "DNR",
+    "success_count": 1
+  },
+  {
+    "origin": "PKD",
+    "destination": "BBS",
+    "intermediate": "ATP",
+    "success_count": 1
+  },
+  {
+    "origin": "INDB",
+    "destination": "AGC",
+    "intermediate": "LAR",
+    "success_count": 1
+  },
+  {
+    "origin": "CDG",
+    "destination": "MAS",
+    "intermediate": "NZM",
+    "success_count": 1
+  },
+  {
+    "origin": "CLT",
+    "destination": "NDLS",
+    "intermediate": "TVC",
+    "success_count": 1
+  },
+  {
+    "origin": "JP",
+    "destination": "ADI",
+    "intermediate": "MJ",
+    "success_count": 1
+  },
+  {
+    "origin": "MAS",
+    "destination": "BBS",
+    "intermediate": "BZA",
+    "success_count": 1
+  },
+  {
+    "origin": "LKO",
+    "destination": "AGC",
+    "intermediate": "PHD",
+    "success_count": 1
+  },
+  {
+    "origin": "JP",
+    "destination": "KOAA",
+    "intermediate": "BKN",
+    "success_count": 1
+  },
+  {
+    "origin": "BIA",
+    "destination": "KOAA",
+    "intermediate": "BSP",
+    "success_count": 1
+  },
+  {
+    "origin": "HWH",
+    "destination": "AGC",
+    "intermediate": "DNR",
+    "success_count": 1
+  },
+  {
+    "origin": "CDG",
+    "destination": "WL",
+    "intermediate": "NZM",
+    "success_count": 1
+  },
+  {
+    "origin": "KGP",
+    "destination": "HYB",
+    "intermediate": "HWH",
+    "success_count": 1
+  },
+  {
+    "origin": "CLT",
+    "destination": "ADI",
+    "intermediate": "AWY",
+    "success_count": 1
+  },
+  {
+    "origin": "AGC",
+    "destination": "MTC",
+    "intermediate": "CNB",
+    "success_count": 1
+  },
+  {
+    "origin": "KGP",
+    "destination": "CPR",
+    "intermediate": "ASN",
+    "success_count": 1
+  },
+  {
+    "origin": "VSKP",
+    "destination": "PKD",
+    "intermediate": "BZA",
+    "success_count": 1
+  },
+  {
+    "origin": "AGC",
+    "destination": "UJN",
+    "intermediate": "SHRN",
+    "success_count": 1
+  },
+  {
+    "origin": "MYS",
+    "destination": "CLT",
+    "intermediate": "KPD",
+    "success_count": 1
+  },
+  {
+    "origin": "BSB",
+    "destination": "WL",
+    "intermediate": "DDU",
+    "success_count": 1
+  },
+  {
+    "origin": "MTC",
+    "destination": "SC",
+    "intermediate": "NZM",
+    "success_count": 1
+  },
+  {
+    "origin": "CLT",
+    "destination": "BRC",
+    "intermediate": "QLN",
+    "success_count": 1
+  },
+  {
+    "origin": "MAS",
+    "destination": "BIA",
+    "intermediate": "WR",
+    "success_count": 1
+  },
+  {
+    "origin": "BBS",
+    "destination": "MAS",
+    "intermediate": "HWH",
+    "success_count": 1
+  },
+  {
+    "origin": "BCT",
+    "destination": "AGC",
+    "intermediate": "JL",
+    "success_count": 1
+  },
+  {
+    "origin": "KOAA",
+    "destination": "DLI",
+    "intermediate": "GAYA",
+    "success_count": 1
+  },
+  {
+    "origin": "KOAA",
+    "destination": "NDLS",
+    "intermediate": "GAYA",
+    "success_count": 2
+  }
+]

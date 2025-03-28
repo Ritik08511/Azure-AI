@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Train Route Finder</title>
+        <style>
+            :root {
+                --glass-bg: rgba(255, 255, 255, 0.1);
+                --glass-border: rgba(255, 255, 255, 0.2);
+                --primary-gradient: linear-gradient(135deg, #6e8efb, #4a6cf7);
+                --secondary-gradient: linear-gradient(135deg, #ff9966, #ff5e62);
+            }
+    
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+    
+            body {
+                font-family: 'Segoe UI', sans-serif;
+                min-height: 100vh;
+                background: linear-gradient(45deg, #1a1f35, #2d3259);
+                color: #fff;
+                padding: 2rem;
+                line-height: 1.6;
+            }
+    
+            .container {
+                max-width: 900px;
+                margin: 0 auto;
+            }
+    
+            h1 {
+                font-size: 2.5rem;
+                margin-bottom: 2rem;
+                background: linear-gradient(to right, #fff, #a5b4fc);
+                -webkit-background-clip: text;
+                background-clip: text;
+                color: transparent;
+                text-align: center;
+                letter-spacing: 1px;
+            }
+    
+            .glass-card {
+                background: var(--glass-bg);
+                backdrop-filter: blur(10px);
+                border: 1px solid var(--glass-border);
+                border-radius: 20px;
+                padding: 2rem;
+                margin-bottom: 2rem;
+                box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+                animation: fadeIn 0.5s ease-out;
+            }
+    
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+    
+            .form-group {
+                margin-bottom: 1.5rem;
+            }
+    
+            label {
+                display: block;
+                margin-bottom: 0.5rem;
+                font-size: 0.9rem;
+                color: #a5b4fc;
+                letter-spacing: 0.5px;
+            }
+    
+            input, select {
+                width: 100%;
+                padding: 1rem;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 10px;
+                color: #fff;
+                font-size: 1rem;
+                transition: all 0.3s ease;
+            }
+    
+            input:focus, select:focus {
+                outline: none;
+                border-color: #4a6cf7;
+                box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.2);
+            }
+    
+            .row {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1.5rem;
+            }
+    
+            button {
+                width: 100%;
+                padding: 1rem;
+                background: var(--primary-gradient);
+                border: none;
+                border-radius: 10px;
+                color: #fff;
+                font-size: 1rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+            }
+    
+            button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(74, 108, 247, 0.4);
+            }
+    
+            /* Results Page Specific Styles */
+            .route-card {
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 15px;
+                padding: 1.5rem;
+                margin-bottom: 1.5rem;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                transition: transform 0.3s ease;
+            }
+    
+            .route-card:hover {
+                transform: translateY(-5px);
+            }
+    
+            .segment {
+                border-left: 3px solid #4a6cf7;
+                padding-left: 1.5rem;
+                margin: 1.5rem 0;
+            }
+    
+            .segment-title {
+                font-size: 1.2rem;
+                color: #a5b4fc;
+                margin-bottom: 1rem;
+            }
+    
+            .detail-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1.5rem;
+            }
+    
+            .detail-group {
+                background: rgba(255, 255, 255, 0.03);
+                padding: 1rem;
+                border-radius: 10px;
+            }
+    
+            .detail-label {
+                color: #a5b4fc;
+                font-size: 0.8rem;
+                margin-bottom: 0.3rem;
+            }
+    
+            .detail-value {
+                font-size: 1.1rem;
+                color: #fff;
+            }
+    
+            .connection-time {
+                background: linear-gradient(90deg, rgba(74, 108, 247, 0.2), rgba(74, 108, 247, 0.1));
+                padding: 1rem;
+                border-radius: 10px;
+                margin: 1rem 0;
+            }
+    
+            .back-button {
+                display: inline-block;
+                background: var(--secondary-gradient);
+                padding: 1rem 2rem;
+                border-radius: 10px;
+                color: #fff;
+                text-decoration: none;
+                font-weight: 600;
+                transition: transform 0.3s ease;
+            }
+    
+            .back-button:hover {
+                transform: translateY(-2px);
+            }
+            /* Updated Delay Prediction Styles */
+.delay-prediction {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.delay-prediction:hover {
+    transform: translateY(-2px);
+}
+
+.delay-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.delay-icon {
+    background: var(--primary-gradient);
+    padding: 8px;
+    border-radius: 12px;
+    margin-right: 1rem;
+}
+
+.delay-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #a5b4fc;
+}
+
+.delay-content {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 1rem;
+}
+
+.delay-time {
+    font-size: 1.8rem;
+    font-weight: 600;
+    background: linear-gradient(to right, #fff, #a5b4fc);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.confidence-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.confidence-high {
+    background: linear-gradient(135deg, #34d399, #10b981);
+    color: #fff;
+}
+
+.confidence-medium {
+    background: linear-gradient(135deg, #fbbf24, #d97706);
+    color: #fff;
+}
+
+.confidence-low {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #fff;
+}
+
+.delay-range {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.range-label {
+    font-size: 0.9rem;
+    color: #a5b4fc;
+}
+
+.range-value {
+    font-size: 1rem;
+    color: #fff;
+}
+
+@media (max-width: 768px) {
+    .delay-content {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+    
+    .delay-range {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+}
+    
+            @media (max-width: 768px) {
+                .row {
+                    grid-template-columns: 1fr;
+                }
+                
+                .detail-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+        </style>
+    </head>
+    
+    <body>
+        <div class="container">
+            <h1>Found Train Routes</h1>
+        
+            {% if not routes %}
+            <div class="glass-card">
+                <p>No routes found with available seats matching your criteria.</p>
+            </div>
+            {% else %}
+                {% for route in routes %}
+                <div class="glass-card route-card">
+                    <h2 class="route-title">Route {{ loop.index }}</h2>
+        
+                    {% for segment in route.segments %}
+                    <div class="segment">
+                        <div class="segment-title">
+                            Segment {{ loop.index }}: Train ({{ segment.train_number }})
+                        </div>
+        
+                        <div class="detail-grid">
+                            <div class="detail-group">
+                                <div class="detail-label">From Station</div>
+                                <div class="detail-value">{{ segment.from_station.split('_')[1] }}</div>
+        
+                                <div class="detail-label">Departure Time</div>
+                                <div class="detail-value">
+                                    {{ segment.departure_time.strftime('%I:%M %p') }}
+                                </div>
+        
+                                <div class="detail-label">Departure Date</div>
+                                <div class="detail-value">
+                                    {% set departure_date = segment.departure_date %}
+                                    {% set month = departure_date[4:6] %}
+                                    {% set day = departure_date[6:8] %}
+                                    {% if day.startswith('0') %}{% set day = day[1:] %}{% endif %}
+                                    {{ day }}{% if day.endswith('1') and day != '11' %}st{% elif day.endswith('2') and day != '12' %}nd{% elif day.endswith('3') and day != '13' %}rd{% else %}th{% endif %}
+                                    {% if month == '01' %}January{% elif month == '02' %}February{% elif month == '03' %}March{% elif month == '04' %}April{% elif month == '05' %}May{% elif month == '06' %}June{% elif month == '07' %}July{% elif month == '08' %}August{% elif month == '09' %}September{% elif month == '10' %}October{% elif month == '11' %}November{% elif month == '12' %}December{% endif %}, 2025
+                                </div>
+                            </div>
+        
+                            <div class="detail-group">
+                                <div class="detail-label">To Station</div>
+                                <div class="detail-value">{{ segment.to_station.split('_')[1] }}</div>
+        
+                                <div class="detail-label">Arrival Time</div>
+                                <div class="detail-value">
+                                    {{ segment.arrival_time.strftime('%I:%M %p') }}
+                                </div>
+        
+                                <div class="detail-label">Arrival Date</div>
+                                <div class="detail-value">
+                                    {% set arrival_date = segment.arrival_date %}
+                                    {% set month = arrival_date[4:6] %}
+                                    {% set day = arrival_date[6:8] %}
+                                    {% if day.startswith('0') %}{% set day = day[1:] %}{% endif %}
+                                    {{ day }}{% if day.endswith('1') and day != '11' %}st{% elif day.endswith('2') and day != '12' %}nd{% elif day.endswith('3') and day != '13' %}rd{% else %}th{% endif %}
+                                    {% if month == '01' %}January{% elif month == '02' %}February{% elif month == '03' %}March{% elif month == '04' %}April{% elif month == '05' %}May{% elif month == '06' %}June{% elif month == '07' %}July{% elif month == '08' %}August{% elif month == '09' %}September{% elif month == '10' %}October{% elif month == '11' %}November{% elif month == '12' %}December{% endif %}, 2025
+                                </div>
+                            </div>
+                        </div>
+        
+                        {% if segment.delay_prediction %}
+<div class="delay-prediction">
+    <div class="delay-header">
+        <div class="delay-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+        </div>
+        <div class="delay-title">Predicted Delay</div>
+    </div>
+    
+    <div class="delay-content">
+        <div class="delay-time">
+            {{ segment.delay_prediction.predicted_delay|round|int }} minutes
+        </div>
+        <div class="confidence-badge confidence-{{ segment.delay_prediction.confidence_level.lower() }}">
+            {{ segment.delay_prediction.confidence_level }}
+        </div>
+    </div>
+    
+    <div class="delay-range">
+        <div>
+            <span class="range-label">Minimum</span>
+            <span class="range-value">{{ segment.delay_prediction.min_delay|round|int }} min</span>
+        </div>
+        <div>
+            <span class="range-label">Maximum</span>
+            <span class="range-value">{{ segment.delay_prediction.max_delay|round|int }} min</span>
+        </div>
+    </div>
+</div>
+{% endif %}
+        
+                    </div>
+        
+                    {% if not loop.last %}
+                    <div class="connection-time">
+                        Connection time to next train: 
+                        {{ ((route.segments[loop.index].departure_time - segment.arrival_time).total_seconds() / 60)|int }} minutes
+                    </div>
+                    {% endif %}
+        
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            {% endif %}
+        
+            <a href="/" class="back-button">Search Again</a>
+        </div>
+         </body>
+    </html>

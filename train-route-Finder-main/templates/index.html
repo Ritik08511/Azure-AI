@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Train Route Finder</title>
+    <!-- Load the Speech SDK directly from CDN -->
+    <script>
+    // Create a script element programmatically to handle CORS
+    function loadSpeechSDK() {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            // Use our proxy endpoint instead of the direct Microsoft URL
+            script.src = '/speech-sdk-proxy';
+            script.onload = () => {
+                console.log("Speech SDK loaded successfully");
+                resolve();
+            };
+            script.onerror = () => {
+                console.error("Failed to load Speech SDK");
+                reject(new Error("Failed to load Speech SDK"));
+            };
+            document.head.appendChild(script);
+        });
+    }
+    </script>
+      <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --primary-gradient: linear-gradient(135deg, #6e8efb, #4a6cf7);
+            --secondary-gradient: linear-gradient(135deg, #ff9966, #ff5e62);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(45deg, #1a1f35, #2d3259);
+            color: #fff;
+            padding: 1rem;
+            line-height: 1.6;
+        }
+
+        /* Responsive container */
+        .container {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        /* Responsive typography */
+        h1 {
+            font-size: clamp(1.75rem, 5vw, 2.5rem);
+            margin-bottom: clamp(1.5rem, 4vw, 2rem);
+            background: linear-gradient(to right, #fff, #a5b4fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-align: center;
+            letter-spacing: 1px;
+            padding: 0 10px;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: clamp(1rem, 4vw, 2rem);
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .autocomplete-wrapper {
+            position: relative;
+        }
+
+        .autocomplete-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(26, 31, 53, 0.95);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            margin-top: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            display: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .autocomplete-results.show {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .autocomplete-item:hover, .autocomplete-item:active {
+            background: rgba(74, 108, 247, 0.2);
+        }
+
+        .autocomplete-item .station-code {
+            color: #a5b4fc;
+            font-size: 0.9em;
+            margin-left: 0.5rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        /* Responsive grid for connection options */
+        .row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: #a5b4fc;
+            letter-spacing: 0.5px;
+        }
+
+        /* Touch-friendly form elements */
+        input, select {
+            width: 100%;
+            padding: clamp(0.75rem, 3vw, 1rem);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 16px; /* Prevents iOS zoom on focus */
+            transition: all 0.3s ease;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        /* Custom select styling for better mobile appearance */
+        select {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+            padding-right: 2.5rem;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #4a6cf7;
+            box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.2);
+        }
+
+        /* Touch-friendly button */
+        button {
+            width: 100%;
+            padding: clamp(0.75rem, 3vw, 1rem);
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        @media (hover: hover) {
+            button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(74, 108, 247, 0.4);
+            }
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        /* Date input styling for better cross-browser compatibility */
+        input[type="date"] {
+            min-height: 44px; /* Better touch target size */
+        }
+
+        /* Improved mobile scrolling */
+        @media (max-width: 768px) {
+            body {
+                padding: 0.5rem;
+            }
+
+            .container {
+                padding: 0 10px;
+            }
+
+            .glass-card {
+                margin: 10px;
+                padding: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Train Route Finder</h1>
+        
+        <!-- Voice search container -->
+        
+        <!-- Add this after your voice-search-container div -->
+        <div id="voice-command-container" class="glass-card voice-search">
+            <button type="button" id="voiceCommandButton">
+                🎤 Use Voice Command
+            </button>
+            <div id="voiceCommandText"></div>
+            <div id="extractedDetails" style="margin-top: 10px; text-align: left; display: none;">
+                <h3>Extracted Details:</h3>
+                <p><strong>Origin:</strong> <span id="extractedOrigin">-</span></p>
+                <p><strong>Destination:</strong> <span id="extractedDestination">-</span></p>
+                <p><strong>Journey Date:</strong> <span id="extractedDate">-</span></p>
+                <button type="button" id="applyExtractedDetails" style="background: #ff9800; width: auto; display: none;">
+                    Apply These Details
+                </button>
+            </div>
+        </div>
+        
+        <div class="glass-card">
+            <form action="/" method="POST">
+                <div class="form-group">
+                    <label>Origin Station</label>
+                    <div class="input-with-button">
+                        <div class="autocomplete-wrapper">
+                            <input type="text" name="origin" id="origin" placeholder="Start typing station name..." required>
+                            <div class="autocomplete-results" id="origin-results"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Destination Station</label>
+                    <div class="input-with-button">
+                        <div class="autocomplete-wrapper">
+                            <input type="text" name="destination" id="destination" placeholder="Start typing station name..." required>
+                            <div class="autocomplete-results" id="destination-results"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Date of Journey</label>
+                    <input type="date" name="date" id="journey-date" required>
+                </div>
+                
+                <div class="row">
+                    <div class="form-group">
+                        <label>Maximum Routes</label>
+                        <select name="max_routes">
+                            <option value="1">1 Route</option>
+                            <option value="2">2 Routes</option>
+                            <option value="3">3 Routes</option>
+                            <option value="4">4 Routes</option>
+                            <option value="5">5 Routes</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Connection Time</label>
+                        <select name="connection_time">
+                            <option value="30">30 minutes</option>
+                            <option value="45">45 minutes</option>
+                            <option value="60">60 minutes</option>
+                            <option value="90">90 minutes</option>
+                            <option value="120">120 minutes</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button type="submit">Find Routes</button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log("Checking Speech SDK availability...");
+        
+        try {
+            // Load the Speech SDK
+            await loadSpeechSDK();
+            
+            // Function to start speech recognition
+            async function startSpeechRecognition(buttonId, inputId) {
+                try {
+                    console.log(`Starting speech recognition for ${buttonId}`);
+                    
+                    // Get token from server
+                    const response = await fetch('/api/get-speech-token');
+                    console.log('Token response status:', response.status);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('Token received:', data);
+                        
+                        if (data.token && data.region) {
+                            console.log('Received token successfully');
+                            
+                            // Check if SpeechSDK is available
+                            if (typeof SpeechSDK === 'undefined') {
+                                throw new Error('Speech SDK is not loaded');
+                            }
+                            
+                            // Initialize speech recognition with the token
+                            const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(data.token, data.region);
+                            speechConfig.speechRecognitionLanguage = 'en-US';
+                            
+                            // Request microphone permission explicitly
+                            try {
+                                await navigator.mediaDevices.getUserMedia({ audio: true });
+                                console.log("Microphone permission granted");
+                            } catch (micError) {
+                                console.error("Microphone permission denied:", micError);
+                                alert("Please allow microphone access to use speech recognition");
+                                throw micError;
+                            }
+                            
+                            const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+                            const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+                            
+                            // Show recording indicator
+                            const button = document.getElementById(buttonId);
+                            button.classList.add('recording');
+                            button.textContent = 'Listening...';
+                            
+                            console.log("Starting recognition...");
+                            
+                            // Start recognition
+                            recognizer.recognizeOnceAsync(
+                                async function (result) {
+                                    console.log("Recognition completed with result:", result);
+                                    
+                                    if (result.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
+                                        const text = result.text;
+                                        console.log(`Recognition result: "${text}"`);
+                                        
+                                        // Update input field with recognized text
+                                        document.getElementById(inputId).value = text;
+                                        
+                                        // If this is the main search button or origin field, process with NER
+                                        if (buttonId === 'startRecognizeButton' || inputId === 'origin') {
+                                            try {
+                                                console.log("Processing with NER:", text);
+                                                
+                                                // Call the NER endpoint
+                                                const nerResponse = await fetch('/api/process-query', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Content-Type': 'application/json'
+                                                    },
+                                                    body: JSON.stringify({ query: text })
+                                                });
+                                                
+                                                if (nerResponse.ok) {
+                                                    const nerData = await nerResponse.json();
+                                                    console.log("NER results:", nerData);
+                                                    
+                                                    // Fill the form fields with the extracted entities
+                                                    if (nerData.origin_formatted) {
+                                                        document.getElementById('origin').value = nerData.origin_formatted;
+                                                    } else if (nerData.origin) {
+                                                        document.getElementById('origin').value = nerData.origin;
+                                                    }
+                                                    
+                                                    if (nerData.destination_formatted) {
+                                                        document.getElementById('destination').value = nerData.destination_formatted;
+                                                    } else if (nerData.destination) {
+                                                        document.getElementById('destination').value = nerData.destination;
+                                                    }
+                                                    
+                                                    if (nerData.journey_date) {
+                                                        const dateStr = nerData.journey_date;
+                                                        const formattedDate = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
+                                                        document.getElementById('journey-date').value = formattedDate;
+                                                    }
+                                                } else {
+                                                    console.error("NER processing failed:", await nerResponse.text());
+                                                }
+                                            } catch (nerError) {
+                                                console.error("Error processing NER:", nerError);
+                                            }
+                                        }
+                                    } else {
+                                        console.warn(`No speech detected. Result reason: ${result.reason}, ${result.errorDetails}`);
+                                        alert("No speech detected. Please try again and speak clearly.");
+                                    }
+                                    
+                                    // Reset button
+                                    button.classList.remove('recording');
+                                    button.textContent = '🎤 Speak';
+                                    
+                                    // Close recognizer
+                                    recognizer.close();
+                                },
+                                function (err) {
+                                    console.error(`Speech recognition error:`, err);
+                                    alert('Speech recognition error: ' + (err.message || err));
+                                    
+                                    // Reset button
+                                    button.classList.remove('recording');
+                                    button.textContent = '🎤 Speak';
+                                    
+                                    // Close recognizer
+                                    recognizer.close();
+                                }
+                            );
+                        } else {
+                            throw new Error('Invalid token data received');
+                        }
+                    } else {
+                        throw new Error(`Failed to get token: ${response.status}`);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Speech recognition failed: ' + error.message);
+                }
+            }
+            
+            // Add event listeners to speech buttons
+            const originSpeechBtn = document.getElementById('originSpeechBtn');
+            const destinationSpeechBtn = document.getElementById('destinationSpeechBtn');
+            
+            if (originSpeechBtn) {
+                originSpeechBtn.addEventListener('click', function() {
+                    startSpeechRecognition('originSpeechBtn', 'origin');
+                });
+            } else {
+                console.error("Origin speech button not found");
+            }
+            
+            if (destinationSpeechBtn) {
+                destinationSpeechBtn.addEventListener('click', function() {
+                    startSpeechRecognition('destinationSpeechBtn', 'destination');
+                });
+            } else {
+                console.error("Destination speech button not found");
+            }
+            
+            // Handle the main speech button if it exists
+            const startRecognizeButton = document.getElementById('startRecognizeButton');
+            if (startRecognizeButton) {
+                startRecognizeButton.addEventListener('click', function() {
+                    // Use the main search button for NER processing
+                    startSpeechRecognition('startRecognizeButton', 'origin');
+                });
+            }
+            
+            // Voice command with NER processing
+            async function processVoiceCommand() {
+                try {
+                    console.log("Starting voice command processing");
+                    
+                    // Get token from server
+                    const response = await fetch('/api/get-speech-token');
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        if (data.token && data.region) {
+                            // Initialize speech recognition with the token
+                            const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(data.token, data.region);
+                            speechConfig.speechRecognitionLanguage = 'en-US';
+                            
+                            // Request microphone permission
+                            await navigator.mediaDevices.getUserMedia({ audio: true });
+                            
+                            const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+                            const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+                            
+                            // Show recording indicator
+                            const button = document.getElementById('voiceCommandButton');
+                            button.classList.add('recording');
+                            button.textContent = 'Listening for command...';
+                            
+                            // Start recognition
+                            recognizer.recognizeOnceAsync(
+                                async function (result) {
+                                    if (result.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
+                                        const text = result.text;
+                                        console.log(`Voice command recognized: "${text}"`);
+                                        
+                                        // Display the recognized text
+                                        document.getElementById('voiceCommandText').textContent = text;
+                                        
+                                        // Process the text with NER
+                                        try {
+                                            const nerResponse = await fetch('/api/process-query', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json'
+                                                },
+                                                body: JSON.stringify({ query: text })
+                                            });
+                                            
+                                            if (nerResponse.ok) {
+                                                const nerData = await nerResponse.json();
+                                                console.log("NER results:", nerData);
+                                                
+                                                // Display extracted details
+                                                const detailsContainer = document.getElementById('extractedDetails');
+                                                detailsContainer.style.display = 'block';
+                                                
+                                                document.getElementById('extractedOrigin').textContent = 
+                                                    nerData.origin || 'Not detected';
+                                                document.getElementById('extractedDestination').textContent = 
+                                                    nerData.destination || 'Not detected';
+                                                document.getElementById('extractedDate').textContent = 
+                                                    nerData.journey_date_text || 'Not detected';
+                                                
+                                                // Show apply button if we have at least origin and destination
+                                                const applyButton = document.getElementById('applyExtractedDetails');
+                                                if (nerData.origin && nerData.destination) {
+                                                    applyButton.style.display = 'inline-block';
+                                                    
+                                                    // Set up the apply button to fill the form
+                                                    applyButton.onclick = function() {
+                                                        // Fill origin with the formatted station name
+                                                        if (nerData.origin) {
+                                                            document.getElementById('origin').value = nerData.origin;
+                                                        }
+                                                        
+                                                        // Fill destination with the formatted station name
+                                                        if (nerData.destination) {
+                                                            document.getElementById('destination').value = nerData.destination;
+                                                        }
+                                                        
+                                                        // Fill date if available
+                                                        if (nerData.formatted_date) {
+                                                            document.getElementById('journey-date').value = nerData.formatted_date;
+                                                        } else if (nerData.journey_date) {
+                                                            const dateStr = nerData.journey_date;
+                                                            const formattedDate = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
+                                                            document.getElementById('journey-date').value = formattedDate;
+                                                        }
+                                                        
+                                                        // Hide the extracted details section
+                                                        document.getElementById('extractedDetails').style.display = 'none';
+                                                    };
+                                                } else {
+                                                    applyButton.style.display = 'none';
+                                                }
+                                            } else {
+                                                console.error("NER processing failed:", await nerResponse.text());
+                                                alert("Failed to process your command. Please try again.");
+                                            }
+                                        } catch (nerError) {
+                                            console.error("Error processing NER:", nerError);
+                                            alert("Error processing your command: " + nerError.message);
+                                        }
+                                    } else {
+                                        console.warn(`No speech detected. Result reason: ${result.reason}`);
+                                        alert("No speech detected. Please try again and speak clearly.");
+                                    }
+                                    
+                                    // Reset button
+                                    button.classList.remove('recording');
+                                    button.textContent = '🎤 Use Voice Command';
+                                    
+                                    // Close recognizer
+                                    recognizer.close();
+                                },
+                                function (err) {
+                                    console.error(`Speech recognition error:`, err);
+                                    alert('Speech recognition error: ' + (err.message || err));
+                                    
+                                    // Reset button
+                                    button.classList.remove('recording');
+                                    button.textContent = '🎤 Use Voice Command';
+                                    
+                                    // Close recognizer
+                                    recognizer.close();
+                                }
+                            );
+                        } else {
+                            throw new Error('Invalid token data received');
+                        }
+                    } else {
+                        throw new Error(`Failed to get token: ${response.status}`);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Voice command failed: ' + error.message);
+                }
+            }
+            
+            // Add this to your DOMContentLoaded event handler
+            const voiceCommandButton = document.getElementById('voiceCommandButton');
+            if (voiceCommandButton) {
+                voiceCommandButton.addEventListener('click', processVoiceCommand);
+            } else {
+                console.error("Voice command button not found");
+            }
+            
+        } catch (error) {
+            console.error("Failed to initialize speech recognition:", error);
+        }
+    });
+    </script>
+</body>
+</html>
